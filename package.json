@@ -1,0 +1,22 @@
+{
+  "name": "Backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/CSPT2-buildweek-team1/Backend.git",
+  "author": "Ryan Matthews <ryan.matthews.professional@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js",
+    "server": "nodemon server.js"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "knex": "^0.19.3"
+  },
+  "devDependencies": {
+    "helmet": "^3.20.1",
+    "nodemon": "^1.19.2"
+  }
+}
