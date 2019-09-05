@@ -28,11 +28,41 @@ server.listen(PORT, function()  {
     console.log(`\n=== Web API Listening on httpL//localhost:${PORT} ===\n`)
 })
 
-server.get("/", (req, res)  =>  {
-    request(options, (error, response, body) =>  {
+let cooldown = 16000;
+let counter = 0;
+let nextDir = '';
+const cb = (error, response, body)   =>  {
+    let data = JSON.parse(body)
+    console.log("line 37: ",cooldown)
+    nextDir = data.exits[0]
+    counter++
+}
+const init = () =>  {
+    request({
+        url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+        headers: headers
+    }, cb)
+}
 
-        let data = JSON.parse(body)
-        console.log(data.cooldown)
-        res.status(200).json({ data: data })
-    });
-})
+const move = (dir) =>  {
+    request({
+        url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+        headers: headers,
+        method: 'POST',
+        body: `{"direction":"${dir}"}`
+    },  cb)
+}
+
+    const timeout = (coolDown)  =>  {
+        return setTimeout(function()   {
+            if(counter === 0)   {
+                init()
+                timeout(cooldown)
+            }   else {
+                move(nextDir)
+                timeout(cooldown)
+            }
+        }, coolDown)
+
+    }
+timeout(cooldown)
