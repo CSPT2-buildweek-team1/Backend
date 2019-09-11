@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const dbConfig = require('./knexfile');
 const server = express();
-const db = knex(dbConfig.development);
+const db = knex(dbConfig.production);
 const PORT = process.env.PORT || 5000;
 const axios = require('axios');
 const helmet = require('helmet')
@@ -15,99 +15,340 @@ const Stack = require('./stack.js')
 server.use(express.json());
 server.use(helmet());
 server.use(cors());
-server.use(bodyParser.urlencoded({ extended: false}));
+server.use(bodyParser.urlencoded({
+	extended: false
+}));
 const headers = {
-    'Authorization': `Token ${process.env.TOKEN}`
+	'Authorization': `Token ${process.env.TOKEN}`
 };
 
 const options = {
-    url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
-    headers: headers
+	url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+	headers: headers
 };
 
-server.listen(PORT, function()  {
-    console.log(`\n=== Web API Listening on httpL//localhost:${PORT} ===\n`)
+server.listen(PORT, function () {
+	console.log(`\n=== Web API Listening on httpL//localhost:${PORT} ===\n`)
+})
+
+
+
+server.get('/graph', (req, res) => {
+	db('room')
+		.then(data => {
+			res.status(200).json({
+				graph: data.map(item => {
+					return {
+						room_id: item.room_id,
+						title: item.title,
+						description: item.description,
+						coordinates: item.coordinates,
+						elevation: item.elevation,
+						terrain: item.terrain,
+						players: item.players,
+						items: item.items,
+						exits: JSON.parse(item.exits),
+					}
+				}).sort((elem1, elem2) => {
+					return elem1.room_id > elem2.room_id
+				})
+			})
+		})
+})
+
+server.get('/',	(req, res)	=>	{
+	db('room')
+		.then(data	=>	{
+			console.log(data)
+			res.status(200).json({data: data.sort((item1, item2)	=>	{
+				return item1.room_id - item2.room_id
+			})})
+		})
+})
+
+server.get('/init',	(req,	res)	=>	{
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+		headers: headers
+	}, (error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+
+server.post('/move',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+		headers: headers,
+		method: 'POST',
+		body: `{"direction":"${req.body.dir}", "next_room_id": "${req.body.predict}"}`
+	}, (error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
+	})
+})
+
+server.post('/take',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/drop',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/drop/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/sell',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/sell/confirm',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}", "confirm":"yes"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/status',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/',
+		headers: headers,
+		method: 'POST'
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
 })
 
 const graph = new Array(500)
 let timer = 1;
-let cooldown = 16000;
+let cooldown = 1000;
 let nextDir = '';
 let prevMove = '';
-counter = 0;
+let counter = 0;
 let currentRoom = null
 let prevRoom = null
-const cb = (error, response, body)   =>  {
-    let data = JSON.parse(body)
-    nextDir = data.exits[0]
-    currentRoom = data.room_id
-    if(graph[currentRoom] === undefined)    {
-        graph[currentRoom] = {
-            room_id: data.room_id,
-            title: data.title,
-            description: data.description,
-            coordinates: data.coordinates,
-            elevation: data.elevation,
-            terrain: data.terrain,
-            players: data.players,
-            items: data.items,
-            exits: {}
-        }
-        data.exits.forEach(exit =>  {
-            graph[currentRoom].exits[exit] = '?'
-        })
-    }
-    if(prevMove !== '') {
-        if (prevMove === 'n')   {
-            graph[prevRoom].exits.n = currentRoom
-            graph[currentRoom].exits.s = prevRoom
-        } else if (prevMove === 's') {
-            graph[prevRoom].exits.s = currentRoom
-            graph[currentRoom].exits.n = prevRoom
-        } else if (prevMove === 'e'){
-            graph[prevRoom].exits.e = currentRoom
-            graph[currentRoom].exits.w = prevRoom
-        }   else {
-            graph[prevRoom].exits.w = currentRoom
-            graph[currentRoom].exits.e = prevRoom
-        }
-    }
-    prevMove = nextDir
-    prevRoom = currentRoom
-    console.log(graph)
-    counter++
-    timer = 0
-    timeout(cooldown)
-}
-const init = () =>  {
-    request({
-        url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
-        headers: headers
-    }, cb)
+let stack = [];
+let moveForward = true;
+let moveBackward = ''
+let prediction = ''
+let searchStack = []
+
+const findNextDir = (exits) => {
+	const keys = Object.keys(exits)
+	for (i = 0; i < keys.length; i++) {
+		if (exits[keys[i]] === "?") {
+			moveForward = true
+			return keys[i]
+		}
+	}
+	moveForward = false;
+	const dir = stack.pop()
+	return dir
 }
 
-const move = (dir) =>  {
-    request({
-        url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
-        headers: headers,
-        method: 'POST',
-        body: `{"direction":"${dir}"}`
-    },  cb)
+const cb = (error, response, body) => {
+	console.log("body", body)
+
+
+	if (!body.errors && body) {
+		let data = JSON.parse(body)
+		currentRoom = data.room_id
+		counter++
+		timer = 1
+		if (graph[currentRoom] === undefined) {
+			graph[currentRoom] = {
+				room_id: data.room_id,
+				title: data.title,
+				description: data.description,
+				coordinates: data.coordinates,
+				elevation: data.elevation,
+				terrain: data.terrain,
+				players: data.players,
+				items: data.items,
+				exits: {}
+			}
+			if (data.exits) {
+				data.exits.forEach(exit => {
+					graph[currentRoom].exits[exit] = '?'
+				})
+			}
+		}
+		if (prevMove !== '') {
+			if (prevMove === 'n') {
+				graph[prevRoom].exits.n = currentRoom
+				graph[currentRoom].exits.s = prevRoom
+				moveBackward = 's'
+			} else if (prevMove === 's') {
+				graph[prevRoom].exits.s = currentRoom
+				graph[currentRoom].exits.n = prevRoom
+				moveBackward = 'n'
+			} else if (prevMove === 'e') {
+				graph[prevRoom].exits.e = currentRoom
+				graph[currentRoom].exits.w = prevRoom
+				moveBackward = 'w'
+			} else {
+				graph[prevRoom].exits.w = currentRoom
+				graph[currentRoom].exits.e = prevRoom
+				moveBackward = 'e'
+			}
+		}
+		console.log(data.exits)
+
+		cooldown = data.cooldown * 1000 + 1000
+		if (moveForward === true && moveBackward !== '') {
+			stack.push(moveBackward)
+		}
+		console.log("stack", stack)
+		nextDir = findNextDir(graph[currentRoom].exits);
+		console.log("nextDir", nextDir)
+		prevMove = nextDir
+		prevRoom = currentRoom
+		counter++
+		timer = 1
+		if (graph[currentRoom].exits[nextDir] !== "?") {
+			prediction = graph[currentRoom].exits[nextDir]
+		} else {
+			prediction = ""
+		}
+		console.log("graph length: ", graph.filter(i => {
+			return i
+		}).length)
+		db('room')
+			.where({
+				room_id: graph[currentRoom].room_id
+			})
+			.then(data => {
+				if (data.length === 0) {
+					db('room')
+						.insert(graph[currentRoom])
+						.then(res => {
+							timeout(cooldown)
+						})
+				} else {
+					db('room')
+						.where({
+							room_id: graph[currentRoom].room_id
+						})
+						.update(graph[currentRoom])
+						.then(res => {
+							timeout(cooldown)
+						})
+				}
+			})
+
+	} else {
+		nextDir = findNextDir(graph[currentRoom].exits);
+		cooldown = 21000
+		timeout(cooldown)
+	}
 }
 
-    const timeout = (coolDown)  =>  {
-        return setTimeout(function()   {
-            if(counter === 0)   {
-                init()
 
-            }   else {
-                move(nextDir)
-            }
-        }, coolDown)
+const init = () => {
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+		headers: headers
+	}, cb)
+}
 
-    }
-timeout(cooldown)
-setInterval(function()  {
-    console.log(timer)
-    timer++
+const move = (dir) => {
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+		headers: headers,
+		method: 'POST',
+		body: `{"direction":"${dir}"}`
+	}, cb)
+}
+
+const predictMove = (dir, predict) => {
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+		headers: headers,
+		method: 'POST',
+		body: `{"direction":"${dir}", "next_room_id": "${predict}"}`
+	}, cb)
+}
+
+const timeout = (coolDown) => {
+	if (graph.filter(i => {
+			return i
+		}).length < 500) {
+		return setTimeout(function () {
+			if (counter === 0) {
+				init()
+			} else if (prediction) {
+				console.log("predictMove")
+				predictMove(nextDir, prediction)
+			} else {
+				move(nextDir)
+			}
+		}, coolDown)
+	} else {
+		return null
+	}
+
+
+}
+
+
+db('room')
+	.then(data => {
+		let arr = data.map(item => {
+			return {
+				title: item.title,
+				description: item.description,
+				coordinates: item.coordinates,
+				elevation: item.elevation,
+				terrain: item.terrain,
+				players: item.players,
+				items: item.items,
+				exits: JSON.parse(item.exits),
+				room_id: item.room_id
+			}
+		})
+		arr = arr.sort((elem1, elem2) => {
+			return elem1.room_id > elem2.room_id
+		})
+		for (i = 0; i < arr.length; i++) {
+			graph[arr[i].room_id] = arr[i]
+		}
+		console.log("Graph length: ", graph.filter(i => {
+			return i
+		}).length)
+		timeout(cooldown)
+	})
+
+setInterval(function () {
+	console.log(timer)
+	timer++
 }, 1000)
