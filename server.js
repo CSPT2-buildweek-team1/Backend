@@ -148,6 +148,33 @@ server.post('/status',	(req, res)	=>	{
 		res.status(200).json({data: data})
 	})
 })
+server.post('/changeName',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name": "${req.body.name}"}`
+	},	(error, response, body)	=>	{
+		console.log(error)
+		console.log(body)
+		res.status(200).json({data: body})
+	})
+})
+
+server.post('/changeName/confirm',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name": "${req.body.name}", "confirm": "aye"}`
+	},	(error, response, body)	=>	{
+		console.log(error)
+		console.log(body)
+		res.status(200).json({data: body})
+	})
+})
 
 const graph = new Array(500)
 let timer = 1;
