@@ -31,7 +31,9 @@ server.listen(PORT, function () {
 	console.log(`\n=== Web API Listening on httpL//localhost:${PORT} ===\n`)
 })
 
-server.get('/', (req, res) => {
+
+
+server.get('/graph', (req, res) => {
 	db('room')
 		.then(data => {
 			res.status(200).json({
@@ -52,6 +54,99 @@ server.get('/', (req, res) => {
 				})
 			})
 		})
+})
+
+server.get('/',	(req, res)	=>	{
+	db('room')
+		.then(data	=>	{
+			console.log(data)
+			res.status(200).json({data: data.sort((item1, item2)	=>	{
+				return item1.room_id - item2.room_id
+			})})
+		})
+})
+
+server.get('/init',	(req,	res)	=>	{
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+		headers: headers
+	}, (error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+
+server.post('/move',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/',
+		headers: headers,
+		method: 'POST',
+		body: `{"direction":"${req.body.dir}", "next_room_id": "${req.body.predict}"}`
+	}, (error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
+	})
+})
+
+server.post('/take',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/take/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/drop',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/drop/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/sell',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/sell/confirm',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name":"${req.body.item}", "confirm":"yes"}`
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
+})
+server.post('/status',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/status/',
+		headers: headers,
+		method: 'POST'
+	},	(error, response, body)	=>	{
+		const data = JSON.parse(body)
+		res.status(200).json({data: data})
+	})
 })
 
 const graph = new Array(500)
@@ -252,7 +347,6 @@ db('room')
 		}).length)
 		timeout(cooldown)
 	})
-
 
 setInterval(function () {
 	console.log(timer)
