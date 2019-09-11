@@ -224,26 +224,7 @@ const timeout = (coolDown) => {
 
 
 }
-// const dfs = (startRoom, visited = [])  =>  {
-//     console.log(visited)
-//     const room = graph[startRoom]
-//     const keys = Object.keys(room.exits)
-//     const directions = []
-//     for(let i = 0; i < keys.length; i++)    {
-//         if(room.exits[keys[i]] === "?")  {
-//             return [keys[i]]
-//         }
-//     }
-//     for(let i = 0; i < keys.length; i++)    {
-//         if(visited.includes(room.exits[keys[i]]) === false) {
-//             let attempt = dfs(room.exits[keys[i]], visited.concat(startRoom))
-//             if(attempt) {
-//                 return [keys[i]].concat(attempt)
-//             }
-//         }
-//     }
-//     return false
-// }
+
 
 db('room')
 	.then(data => {
