@@ -72,7 +72,8 @@ server.get('/init',	(req,	res)	=>	{
 		headers: headers
 	}, (error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		currentRoom = data.room_id
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 
@@ -85,7 +86,8 @@ server.post('/move',	(req, res)	=>	{
 		body: `{"direction":"${req.body.dir}", "next_room_id": "${req.body.predict}"}`
 	}, (error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data, exits: graph[data.room_id].exits})
+		currentRoom = data.room_id
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 
@@ -98,7 +100,7 @@ server.post('/take',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 server.post('/drop',	(req, res)	=>	{
@@ -110,7 +112,7 @@ server.post('/drop',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 server.post('/sell',	(req, res)	=>	{
@@ -122,7 +124,7 @@ server.post('/sell',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 server.post('/sell/confirm',	(req, res)	=>	{
@@ -134,7 +136,7 @@ server.post('/sell/confirm',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}", "confirm":"yes"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
 	})
 })
 server.post('/status',	(req, res)	=>	{
@@ -145,7 +147,34 @@ server.post('/status',	(req, res)	=>	{
 		method: 'POST'
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[currentRoom].exits})
+	})
+})
+server.post('/changeName',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name": "${req.body.name}"}`
+	},	(error, response, body)	=>	{
+		console.log(error)
+		console.log(body)
+		res.status(200).json({data: body, exits: graph[currentRoom].exits})
+	})
+})
+
+server.post('/changeName/confirm',	(req, res)	=>	{
+	console.log(req.body)
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/change_name/',
+		headers: headers,
+		method: 'POST',
+		body: `{"name": "${req.body.name}", "confirm": "aye"}`
+	},	(error, response, body)	=>	{
+		console.log(error)
+		console.log(body)
+		res.status(200).json({data: body, exits: graph[currentRoom].exits})
 	})
 })
 
