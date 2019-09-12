@@ -31,7 +31,15 @@ server.listen(PORT, function () {
 	console.log(`\n=== Web API Listening on httpL//localhost:${PORT} ===\n`)
 })
 
+let currentRoom = null
 
+request({
+	url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
+	headers: headers
+}, (error, response, body)	=>	{
+	const data = JSON.parse(body)
+	currentRoom = data.room_id
+})
 
 server.get('/graph', (req, res) => {
 	db('room')
@@ -178,13 +186,25 @@ server.post('/changeName/confirm',	(req, res)	=>	{
 	})
 })
 
+server.post('/mine',	(req, res)	=>	{
+	request({
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/',
+		headers: headers,
+		method: 'POST',
+		body: `{"proof": "${req.body.proof}"}`
+	},	(error, response, body)	=>	{
+		console.log(error)
+		console.log(body)
+		res.status(200).json({data: body, exits: graph[currentRoom].exits})
+	})
+})
+
 const graph = new Array(500)
 let timer = 1;
 let cooldown = 1000;
 let nextDir = '';
 let prevMove = '';
 let counter = 0;
-let currentRoom = null
 let prevRoom = null
 let stack = [];
 let moveForward = true;
