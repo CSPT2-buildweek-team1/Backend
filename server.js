@@ -11,6 +11,8 @@ const axios = require('axios');
 const helmet = require('helmet')
 const request = require('request')
 const Stack = require('./stack.js')
+const SHA256 = require('crypto-js/sha256')
+const sha256 = require('js-sha256')
 
 server.use(express.json());
 server.use(helmet());
@@ -33,13 +35,6 @@ server.listen(PORT, function () {
 
 let currentRoom = null
 
-request({
-	url: 'https://lambda-treasure-hunt.herokuapp.com/api/adv/init/',
-	headers: headers
-}, (error, response, body)	=>	{
-	const data = JSON.parse(body)
-	currentRoom = data.room_id
-})
 
 server.get('/graph', (req, res) => {
 	db('room')
@@ -81,7 +76,7 @@ server.get('/init',	(req,	res)	=>	{
 	}, (error, response, body)	=>	{
 		const data = JSON.parse(body)
 		currentRoom = data.room_id
-		res.status(200).json({data: data, exits: graph[currentRoom].exits})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 
@@ -188,13 +183,11 @@ server.post('/changeName/confirm',	(req, res)	=>	{
 
 server.post('/mine',	(req, res)	=>	{
 	request({
-		url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/',
+		url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/',
 		headers: headers,
-		method: 'POST',
-		body: `{"proof": "${req.body.proof}"}`
 	},	(error, response, body)	=>	{
-		console.log(error)
-		console.log(body)
+		const data = JSON.parse(body)
+		let hash = validProof(data.proof, data.difficulty)
 		res.status(200).json({data: body, exits: graph[currentRoom].exits})
 	})
 })
@@ -211,6 +204,23 @@ let moveForward = true;
 let moveBackward = ''
 let prediction = ''
 let searchStack = []
+
+const validProof = (lastProof, difficulty)	=>	{
+	let lead0 = []
+	for(i = 0; i < difficulty; i++)	{
+		lead0.push(0)
+	}
+	lead0 = lead0.join("")
+	let proof = 0
+	let thisHash = sha256(escape(lastProof, proof))
+	while(thisHash.slice(0,difficulty) !== lead0)	{
+		proof++
+		thisHash = sha256(escape(lastProof, proof))
+		console.log(thisHash)
+		console.log(proof)
+	}
+	return thisHash
+}
 
 const findNextDir = (exits) => {
 	const keys = Object.keys(exits)
