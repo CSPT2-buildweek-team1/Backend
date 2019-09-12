@@ -98,7 +98,7 @@ server.post('/take',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 server.post('/drop',	(req, res)	=>	{
@@ -110,7 +110,7 @@ server.post('/drop',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 server.post('/sell',	(req, res)	=>	{
@@ -122,7 +122,7 @@ server.post('/sell',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 server.post('/sell/confirm',	(req, res)	=>	{
@@ -134,7 +134,7 @@ server.post('/sell/confirm',	(req, res)	=>	{
 		body: `{"name":"${req.body.item}", "confirm":"yes"}`
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 server.post('/status',	(req, res)	=>	{
@@ -145,7 +145,7 @@ server.post('/status',	(req, res)	=>	{
 		method: 'POST'
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 server.post('/changeName',	(req, res)	=>	{
@@ -158,7 +158,7 @@ server.post('/changeName',	(req, res)	=>	{
 	},	(error, response, body)	=>	{
 		console.log(error)
 		console.log(body)
-		res.status(200).json({data: body})
+		res.status(200).json({data: body, exits: graph[data.room_id].exits})
 	})
 })
 
@@ -172,7 +172,7 @@ server.post('/changeName/confirm',	(req, res)	=>	{
 	},	(error, response, body)	=>	{
 		console.log(error)
 		console.log(body)
-		res.status(200).json({data: body})
+		res.status(200).json({data: body, exits: graph[data.room_id].exits})
 	})
 })
 
