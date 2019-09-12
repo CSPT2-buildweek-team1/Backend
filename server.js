@@ -72,7 +72,7 @@ server.get('/init',	(req,	res)	=>	{
 		headers: headers
 	}, (error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data})
+		res.status(200).json({data: data, exits: graph[data.room_id].exits})
 	})
 })
 
