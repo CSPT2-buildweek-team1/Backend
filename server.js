@@ -62,7 +62,6 @@ server.get('/graph', (req, res) => {
 server.get('/',	(req, res)	=>	{
 	db('room')
 		.then(data	=>	{
-			console.log(data)
 			res.status(200).json({data: data.sort((item1, item2)	=>	{
 				return item1.room_id - item2.room_id
 			})})
@@ -150,7 +149,7 @@ server.post('/status',	(req, res)	=>	{
 		method: 'POST'
 	},	(error, response, body)	=>	{
 		const data = JSON.parse(body)
-		res.status(200).json({data: data, exits: graph[currentRoom].exits})
+		res.status(200).json({data: data})
 	})
 })
 server.post('/changeName',	(req, res)	=>	{
