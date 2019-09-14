@@ -11,7 +11,7 @@ const axios = require('axios');
 const helmet = require('helmet')
 const request = require('request')
 const Stack = require('./stack.js')
-const SHA256 = require('crypto-js/sha256')
+const CryptoJS = require('crypto-js')
 const sha256 = require('js-sha256')
 
 server.use(express.json());
@@ -179,15 +179,38 @@ server.post('/changeName/confirm',	(req, res)	=>	{
 		res.status(200).json({data: body, exits: graph[currentRoom].exits})
 	})
 })
-
+const mineTimeout = (prevProof, difficulty, proof)	=>	{
+	setTimeout(()	=>	{
+		let vpRes = validProof(prevProof.toString(), difficulty, proof)
+		let newProof = vpRes[0]
+		proof = vpRes[1]
+		request({
+			url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/mine/',
+			headers: headers,
+			method: 'POST',
+			body: `{"proof": ${proof}}`
+		},	(error, response, body)	=>	{
+			console.log(body)
+			const data = JSON.parse(body)
+			cooldown = data.cooldown*1000 + 1000
+			if(data.errors.length === 0)	{
+				return data
+			}	else {
+				return mineTimeout(prevProof, difficulty, proof)
+			}
+		})
+	}, cooldown)
+}
 server.post('/mine',	(req, res)	=>	{
 	request({
 		url: 'https://lambda-treasure-hunt.herokuapp.com/api/bc/last_proof/',
 		headers: headers,
-	},	(error, response, body)	=>	{
+	},	async (error, response, body)	=>	{
 		const data = JSON.parse(body)
-		let hash = validProof(data.proof, data.difficulty)
-		res.status(200).json({data: body, exits: graph[currentRoom].exits})
+		let proof = 0;
+		mineTimeout(data.proof, data.difficulty, proof,	()	=>	{
+			res.status(200).json({data: data})
+		})
 	})
 })
 
@@ -204,21 +227,27 @@ let moveBackward = ''
 let prediction = ''
 let searchStack = []
 
-const validProof = (lastProof, difficulty)	=>	{
+const validProof = (lastProof, difficulty, proof)	=>	{
 	let lead0 = []
 	for(i = 0; i < difficulty; i++)	{
 		lead0.push(0)
 	}
 	lead0 = lead0.join("")
-	let proof = 0
-	let thisHash = sha256(escape(lastProof, proof))
+
+
+	if(proof !== 0)	{
+		proof++
+	}
+	let thisHash = CryptoJS.SHA256(encodeURI(lastProof + proof.toString()))
+	thisHash = thisHash.toString(CryptoJS.enc.Base16)
+	console.log(thisHash)
 	while(thisHash.slice(0,difficulty) !== lead0)	{
 		proof++
-		thisHash = sha256(escape(lastProof, proof))
-		console.log(thisHash)
-		console.log(proof)
+		thisHash = CryptoJS.SHA256(encodeURI(lastProof + proof.toString()))
+		thisHash = thisHash.toString(CryptoJS.enc.Base16)
 	}
-	return thisHash
+	console.log(thisHash)
+	return [parseInt(thisHash), proof]
 }
 
 const findNextDir = (exits) => {

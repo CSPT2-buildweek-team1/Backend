@@ -1069,6 +1069,11 @@ has-values@^1.0.0:
     is-number "^3.0.0"
     kind-of "^4.0.0"
 
+hashlib@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/hashlib/-/hashlib-1.0.1.tgz#68d7c4924c10f2f67dd20ede79316397e772107c"
+  integrity sha1-aNfEkkwQ8vZ90g7eeTFjl+dyEHw=
+
 helmet-crossdomain@0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/helmet-crossdomain/-/helmet-crossdomain-0.4.0.tgz#5f1fe5a836d0325f1da0a78eaa5fd8429078894e"
